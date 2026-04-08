@@ -41,27 +41,27 @@ A modern and responsive bakery website built with **Laravel 12** and **Livewire*
 ### Steps
 
 1. **Clone the repository**
-```bash
-git clone https://github.com/mohammadhussainshams7/Bread-Bakery.git
-cd Bread-Bakery
+    ```bash
+    git clone https://github.com/mohammadhussainshams7/Bread-Bakery.git
+    cd Bread-Bakery
 2. Install PHP dependencies:
-     ```bash
-    composer install
+   ```bash
+   composer install
 3. Install JavaScript dependencies:
    ```bash
-    npm install
-    npm run dev
+        npm install
+        npm run dev
 4. Copy .env.example to .env and set your database credentials:
    ```bash
-    cp .env.example .env
-    php artisan key:generate
+        cp .env.example .env
+        php artisan key:generate
 5. Run migrations:
     ```bash
-    php artisan migrate
-    php artisan migrate --seed
+        php artisan migrate
+        php artisan migrate --seed
 6. Start the local development server:
    ```bash
-    php artisan serve
+        php artisan serve
 ## Usage
 
 Visit http://localhost:8000 in your browser.
