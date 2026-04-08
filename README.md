@@ -1,46 +1,47 @@
 # 🍞 Bread Bakery Website
 
-A modern and responsive bakery website showcasing delicious baked goods, menu items, and a smooth user experience.
+A modern and responsive bakery website built with **Laravel 12** and **Livewire**, featuring dynamic product display, a seeded database, and an engaging user experience.
 
 ---
 
 ## 🚀 Features
 
-- 🥖 Beautiful homepage design
-- 📱 Fully responsive (mobile-friendly)
-- 🛒 Product / menu display
-- 📞 Contact form
-- 🎨 Clean and simple UI
+- 🥖 Beautiful homepage design  
+- 📱 Fully responsive (mobile-friendly)  
+- 🛒 Product / menu display with Livewire components  
+- 📞 Contact form  
+- 💾 Database seeders for sample data  
+- 🎨 Clean and modern UI  
 
 ---
 
-## 🛠️ Technologies Used
+## 🛠️ Technology Stack
 
-- HTML5
-- CSS3
-- JavaScript
-- (Add Bootstrap / React if applicable)
+- PHP >= 8.1  
+- Laravel 12  
+- Livewire  
+- MySQL (or any supported database)  
+- HTML5, CSS3, JavaScript  
+- Node.js & NPM (for assets compilation)  
 
 ---
 
-#!/bin/bash
-echo "========================================="
-echo "   Bread-Bakery Installation Script"
-echo "========================================="
+## 💻 Installation
 
-# Step 1: Clone the repository
-echo "Cloning repository..."
+### Prerequisites
+
+- PHP >= 8.1  
+- Composer  
+- Node.js & NPM  
+- MySQL or another supported database  
+- Git  
+
+---
+
+### Steps
+
+1. **Clone the repository**
+```bash
 git clone https://github.com/mohammadhussainshams7/Bread-Bakery.git
-cd Bread-Bakery || exit
+cd Bread-Bakery
 
-# Step 2: Open the website
-echo "Opening the website in your default browser..."
-if command -v xdg-open >/dev/null; then
-    xdg-open index.html
-elif command -v open >/dev/null; then
-    open index.html
-else
-    echo "Cannot detect browser opener, open index.html manually."
-fi
-
-echo "Installation complete!"
