@@ -1,22 +1,17 @@
-<div class="min-h-screen bg-gray-900 text-gray-100 p-6">
+@props(['title' => 'إدارة البطاقات', 'link' => 'cards.create'])
 
-    <div class="max-w-5xl mx-auto space-y-6">
+<x-livewire.page :title="$title" :link="$link">
 
+    <div>
         <!-- Header -->
-        <div class="flex items-center justify-between">
-            <h1 class="text-3xl font-bold text-white">إدارة البطاقات</h1>
-            <a wire:navigate href="{{ route('cards.create') }}"
-                class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold">
-                إضافة بطاقة جديدة
-            </a>
-        </div>
+
         <livewire:cards.import />
         <!-- Search -->
         <input type="text" wire:model.live.debounce.400ms="search" placeholder="ابحث باسم صاحب البطاقة"
-            class="w-full px-3 py-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+            class="w-full px-3 py-3 mt-5  mb-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
 
         <!-- Table Card -->
-        <div class="bg-gray-800 border border-gray-700 rounded-xl shadow-lg overflow-x-auto">
+        <div class="bg-gray-800 border mt-3 border-gray-700 rounded-xl shadow-lg overflow-x-auto">
 
             <div class="p-4 border-b border-gray-700">
                 <h2 class="font-semibold text-gray-200">قائمة البطاقات</h2>
@@ -72,6 +67,4 @@
             </div>
 
         </div>
-
-    </div>
-</div>
+</x-livewire.page>

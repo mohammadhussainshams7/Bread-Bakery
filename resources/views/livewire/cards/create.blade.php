@@ -1,15 +1,7 @@
-<div class="min-h-screen bg-gray-900 text-gray-100 p-6 flex justify-center">
+@props(['title' => 'إضافة بطاقة جديدة', 'backLink' => 'cards.index'])
 
+<x-livewire.page :title="$title" :backLink="$backLink">
     <div class="max-w-5xl w-full space-y-6">
-
-        <!-- Header -->
-        <div class="flex items-center justify-between">
-            <h1 class="text-3xl font-bold text-white">إضافة بطاقة جديدة</h1>
-            <a href="{{ route('cards.index') }}"
-                class="bg-gray-600 hover:bg-gray-500 text-white font-semibold px-6 py-3 rounded-lg transition">
-                العودة لقائمة البطاقات
-            </a>
-        </div>
 
         <!-- Form Card -->
         <div class="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-6">
@@ -60,4 +52,4 @@
 
         </div>
     </div>
-</div>
+</x-livewire.page>
