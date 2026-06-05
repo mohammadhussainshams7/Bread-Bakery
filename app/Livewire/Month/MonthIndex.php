@@ -2,25 +2,14 @@
 
 namespace App\Livewire\Month;
 
+use App\Livewire\Concerns\HasArabicMonths;
 use Livewire\Component;
 use App\Models\Month;
 
 class MonthIndex extends Component
 {
-    public $arbMonths = [
-        1 => 'يناير',
-        2 => 'فبراير',
-        3 => 'مارس',
-        4 => 'ابريل',
-        5 => 'مايو',
-        6 => 'يونيو',
-        7 => 'يوليو',
-        8 => 'اغسطس',
-        9 => 'سبتمبر',
-        10 => 'اكتوبر',
-        11 => 'نوفمبر',
-        12 => 'ديسمبر'
-    ];
+    use HasArabicMonths;
+
 
     public function delete($id)
     {

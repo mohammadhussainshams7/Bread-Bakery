@@ -5,33 +5,20 @@ namespace App\Livewire\UnpaidCards;
 use App\Models\Card;
 use App\Models\Month;
 use App\Services\UnpayedCard;
+use App\Livewire\Concerns\HasArabicMonths;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class Index extends Component
 {
-    use WithPagination;
+    use WithPagination, HasArabicMonths;
 
     public $search = '';
     public $statusFilter = null;
     public $selectedMonthSearch = null;
 
     public $months;
-    public $arbMonths = [
-        1 => 'يناير',
-        2 => 'فبراير',
-        3 => 'مارس',
-        4 => 'أبريل',
-        5 => 'مايو',
-        6 => 'يونيو',
-        7 => 'يوليو',
-        8 => 'أغسطس',
-        9 => 'سبتمبر',
-        10 => 'أكتوبر',
-        11 => 'نوفمبر',
-        12 => 'ديسمبر'
-    ];
 
     protected $updatesQueryString = ['search', 'statusFilter', 'selectedMonthSearch'];
     protected $paginationTheme = 'tailwind';
@@ -56,48 +43,57 @@ class Index extends Component
         $this->resetPage();
     }
 
-    public function render()
+     public function render()
     {
-        $service = app(UnpayedCard::class);
-        $monthId = $this->selectedMonthSearch ?? Month::latest()->first()->id;
 
-        // 1️⃣ جلب البيانات مع البحث فقط
-        $cards = Card::query()
-            ->when($this->search, fn($q) => $q->where('name', 'like', "%{$this->search}%"))
-            ->get();
+$service = app(UnpayedCard::class);
+         $month = Month::find($this->selectedMonthSearch)
+    ?? Month::latest()->first();
+$cards = Card::query()
+    ->when($this->search, function ($q) {
+        $q->where('name', 'like', "%{$this->search}%");
+    })
+    ->get(); // ✅ بدون paginate
 
-        // 2️⃣ حساب status لكل بطاقة
-        $cards = $cards->map(function ($card) use ($service, $monthId) {
-            $payment = $service->calculate($card->id, $monthId);
+$collection = $cards->map(function ($card) use ($service, $month) {
+    $payment = $service->calculate($card, $month);
 
-            $card->total = $payment['total'];
-            $card->paid = $payment['paid'];
-            $card->remaining = $payment['remaining'];
-            $card->status = $payment['status'];
-            return $card;
-        });
+    $card->total = $payment['total'];
+    $card->month = $this->arbMonths[$month->month_number] . ' / ' . $month->year;
+    $card->paid = $payment['paid'];
+    $card->remaining = $payment['remaining'];
+    $card->status = $payment['status'];
 
-        // 3️⃣ فلترة حسب الحالة
-        if ($this->statusFilter) {
-            $cards = $cards->filter(fn($card) => $card->status === $this->statusFilter);
-        }
+    return $card;
+});
 
-        // 4️⃣ تجاهل البطاقات التي تم دفعها بالكامل
-        $cards = $cards->filter(fn($card) => $card->status != 'تم الدفع');
+// فلترة
+$collection = $collection->filter(function ($card) {
+    return $card->status !== 'تم الدفع';
+});
 
-        // 5️⃣ تحويل Collection إلى Paginator يدويًا
-        $perPage = 10;
-        $currentPage = $this->page ?? 1;
-        $paginatedCards = new LengthAwarePaginator(
-            $cards->forPage($currentPage, $perPage)->values(),
-            $cards->count(),
-            $perPage,
-            $currentPage,
-            ['path' => request()->url(), 'query' => request()->query()]
-        );
+if ($this->statusFilter) {
+    $collection = $collection->where('status', $this->statusFilter);
+}
+
+// pagination يدوي
+$page = LengthAwarePaginator::resolveCurrentPage();
+$perPage = 10;
+
+	$paginatedCards = new LengthAwarePaginator(
+    $collection->forPage($page, $perPage)->values(),
+    $collection->count(),
+    $perPage,
+    $page,
+    [
+        'path' => request()->url(),
+        'query' => request()->query(), // مهم مع الفلاتر
+    ]
+);
+ 
         return view('livewire.unpaid-cards.index', [
-            'cards' => $paginatedCards,
-            'months' => Month::all(), // لإظهار قائمة الأشهر في واجهة المستخدم
-        ]);
+    'paginatedCards' => $paginatedCards,
+    'months' => $this->months,
+]);
     }
 }

@@ -7,12 +7,17 @@ use App\Models\Card;
 use App\Models\Month;
 use App\Models\Payment;
 use App\Models\BreadPrice;
+/* use App\Models\Transaction; */
 use Illuminate\Support\Facades\DB;
 
 class PaymentService
 {
     private const BREAD_PER_PERSON = 5;
-
+    private $breadPriceWithCard = "";
+    private $freeBreadPrice = "";
+    private $freeBreadPerMonth = "";
+    private $daysInMonth = "";
+    private $total = "";
     /**
      * Calculate the total amount for a card and month
      */
@@ -21,18 +26,18 @@ class PaymentService
         $prices = BreadPrice::whereIn('type', ['بالبطاقة', 'حر'])
             ->pluck('price', 'type');
 
-        $breadPriceWithCard = $prices['بالبطاقة'] ?? 0;
-        $freeBreadPrice = $prices['حر'] ?? 0;
-        $freeBreadPerMonth = $card->free_bread_per_month ?? 0;
-        $daysInMonth = $month->number_of_days_in_the_month ?? 0;
+        $this->breadPriceWithCard = $prices['بالبطاقة'] ?? 0;
+        $this->freeBreadPrice = $prices['حر'] ?? 0;
+        $this->freeBreadPerMonth = $card->free_bread_per_month ?? 0;
+        $this->daysInMonth = $month->number_of_days_in_the_month ?? 0;
 
-        $total = $card->members * $breadPriceWithCard * self::BREAD_PER_PERSON * $daysInMonth;
+        $this->total = $card->members * $this->breadPriceWithCard * self::BREAD_PER_PERSON * $this->daysInMonth;
 
-        if ($freeBreadPerMonth > 0) {
-            $total += $freeBreadPrice * $daysInMonth * $freeBreadPerMonth;
+        if ($this->freeBreadPerMonth > 0) {
+            $this->total += $this->freeBreadPrice * $this->daysInMonth * $this->freeBreadPerMonth;
         }
 
-        return $total;
+        return $this->total;
     }
 
     /**
@@ -64,38 +69,35 @@ class PaymentService
 
         $total = $this->calculateTotal($card, $month);
 
+        $total = (int) round($total);
         return DB::transaction(function () use ($card, $month, $paidAmount, $total) {
 
-            $payment = Payment::firstOrNew([
+
+            $payment = Payment::firstOrCreate([
                 'card_id' => $card->id,
                 'month_id' => $month->id,
+                "bread_price" => $this->breadPriceWithCard + $this->freeBreadPrice,
+                "members" => $card->members,
+                "total" => $total,
             ]);
 
-            $payment->bread_price = BreadPrice::where('type', 'بالبطاقة')->value('price') ?? 0;
-            $payment->members = $card->members;
-            $payment->total = $total;
 
-            $paidSoFar = $payment->paid_amount ?? 0;
-            $remaining = $total - $paidSoFar + $paidAmount;
+            // ✅ Recalculate total paid
+            $totalPaid =  $paidAmount;
+
+            $payment->paid_amount = $totalPaid;
+            // ✅ Status
+            $remaining = $total - $totalPaid;
 
             if ($remaining <= 0) {
                 $payment->status = PaymentStatus::PAID;
-            } elseif ($paidSoFar + $paidAmount > 0) {
+            } elseif ($totalPaid > 0) {
                 $payment->status = PaymentStatus::PARTIAL;
             } else {
                 $payment->status = PaymentStatus::UNPAID;
             }
-
             $payment->save();
 
-            if ($paidAmount > 0) {
-                $payment->transactions()->create([
-                    'amount' => $paidAmount,
-                    'paid_at' => now(),
-                ]);
-
-                $payment->increment('paid_amount', $paidAmount);
-            }
 
             return $payment;
         });

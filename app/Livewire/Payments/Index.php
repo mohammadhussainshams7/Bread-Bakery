@@ -2,92 +2,137 @@
 
 namespace App\Livewire\Payments;
 
+use App\Models\Card;
+use App\Models\Month;
+use App\Models\Payment;
+use App\Services\GetPaymentsCardsService;
+use App\Services\PaymentService;
+use App\Livewire\Concerns\HasArabicMonths;
+use Illuminate\Pagination\LengthAwarePaginator;
+
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Models\Payment;
-use App\Models\Month;
 
 class Index extends Component
 {
-    use WithPagination;
+    use WithPagination, HasArabicMonths;
 
-    protected $paginationTheme = 'tailwind';
+
+
 
     public $search = '';
-    public $selectedMonthSearch = null;
 
-    public $months = [];
-    public $arbMonths = [
-        '1' => 'يناير',
-        '2' => 'فبراير',
-        '3' => 'مارس',
-        '4' => 'ابريل',
-        '5' => 'مايو',
-        '6' => 'يونيو',
-        '7' => 'يوليو',
-        '8' => 'اغسطس',
-        '9' => 'ستمبر',
-        '10' => 'اكتوبر',
-        '11' => 'نوفمبر',
-        '12' => 'ديسمبر'
-    ];
+    public array $paidAmounts = [];
+    public $stutus = null;
 
-    public function mount()
-    {
-        $this->months = Month::all();
-    }
+    /**
+     * تحديد الشهر الافتراضي مرة واحدة فقط
+     */
 
-    // إعادة تعيين الصفحة عند تغيير البحث
-    public function updatedSearch()
+
+    public function updatingSearch()
     {
         $this->resetPage();
+        $this->paidAmounts = [];
     }
 
-    public function updatedSelectedMonthSearch()
+    public function updatedPaidAmounts($value, $key)
     {
-        $this->resetPage();
-    }
 
-    // مسح الفلاتر
-    public function clearFilters()
-    {
-        $this->search = '';
-        $this->selectedMonthSearch = null;
-        $this->resetPage();
-    }
+        $amount = (float) $value;
 
-    // حالة الدفع
-    public function status($payment)
-    {
-        $remaining = $payment->total - $payment->paid_amount;
+        if (str_contains($key, '_')) {
+            [$cardId, $monthId] = explode('_', $key, 2);
 
-        if ($payment->paid_amount == 0) {
-            return ['text' => 'لم يدفع', 'color' => 'bg-red-500', 'remaining' => $remaining];
+            app(PaymentService::class)->addPayment(
+                (int) $cardId,
+                (int) $monthId,
+                $amount,
+            );
+        } else {
+            app(PaymentService::class)->addPayment(
+                $key,
+                $this->selectedMonthSearch,
+                $amount
+            );
         }
 
-        if ($payment->paid_amount < $payment->total) {
-            return ['text' => 'جزئي', 'color' => 'bg-yellow-500', 'remaining' => $remaining];
-        }
+        unset($this->paidAmounts[$key]);
 
-        return ['text' => 'تم', 'color' => 'bg-green-500', 'remaining' => 0];
+        session()->flash('success', 'تم التحديث');
     }
 
-    public function render()
+
+    public function render(GetPaymentsCardsService $service)
     {
-        $payments = Payment::with(['card', 'month'])
-            ->when($this->search, function ($query) {
-                $query->whereHas('card', function ($q) {
-                    $q->where('name', 'like', "%{$this->search}%");
-                });
-            })
-            ->when($this->selectedMonthSearch, function ($query) {
-                $query->where('month_id', $this->selectedMonthSearch);
-            })
-            ->latest()
-            ->paginate(5);
+        if ($this->search) {
+            $cards = Card::query()
+                ->where('name', 'like', "%{$this->search}%")
+                ->get();
+
+            $months = Month::orderBy('year', 'desc')
+                ->orderBy('month_number', 'desc')
+                ->get();
+
+            $paymentService = app(PaymentService::class);
+            $rows = collect();
+
+            foreach ($cards as $card) {
+                foreach ($months as $month) {
+                    $payment = Payment::where('card_id', $card->id)
+                        ->where('month_id', $month->id)
+                        ->first();
+
+                    $paid = $payment->paid_amount ?? 0;
+                    $total = $payment->total ?? $paymentService->calculateTotal($card, $month);
+                    $remaining = max(0, $total - $paid);
+                    $status = $payment->status ?? 'غير مدفوع';
+                    $styleClassStatus = $this->getPaymentStatusClass($status, $paid);
+
+                    $rows->push((object) [
+                        'key' => "{$card->id}_{$month->id}",
+                        'card_id' => $card->id,
+                        'month_id' => $month->id,
+                        'name' => $card->name,
+                        'month_number' => $month->month_number,
+                        'month_year' => $month->year,
+                        'total' => $total,
+                        'paid' => $paid,
+                        'remaining' => $remaining,
+                        'status' => $status,
+                        'styleClassStatus' => $styleClassStatus,
+                    ]);
+                }
+            }
+
+            $page = LengthAwarePaginator::resolveCurrentPage();
+            $perPage = 10;
+            $searchRows = new LengthAwarePaginator(
+                $rows->forPage($page, $perPage)->values(),
+                $rows->count(),
+                $perPage,
+                $page,
+                [
+                    'path' => request()->url(),
+                    'query' => request()->query(),
+                ]
+            );
+
+            foreach ($searchRows as $row) {
+                if (!isset($this->paidAmounts[$row->key])) {
+                    $this->paidAmounts[$row->key] = $row->paid;
+                }
+            }
+
+            return view('livewire.payments.index', [
+                'searchRows' => $searchRows,
+                'months' => Month::select('id', 'month_number', 'year')->get(),
+            ]);
+        }
+
         return view('livewire.payments.index', [
-            'payments' => $payments,
-            'months' => $this->months,
+            'searchRows' => null,
+            'months' => Month::select('id', 'month_number', 'year')->get(),
         ]);
     }
 }

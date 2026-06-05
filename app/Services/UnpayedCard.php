@@ -10,54 +10,43 @@ use App\Models\Payment;
 
 class UnpayedCard
 {
-    public $total, $paid, $breadPerPerson = 5, $breadPriceWithCard, $remaining;
+    private $total, $paid, $breadPerPerson = 5, $breadPriceWithCard, $remaining;
 
 
 
 
-    public function calculate($cardId, $monthId)
+    public function calculate(Card $card, Month $month)
     {
-        $card = Card::find($cardId);
-        $month = Month::find($monthId);
+        // Get bread prices مرة واحدة (يفضل تتحط cache)
+        $prices = BreadPrice::whereIn('type', ['بالبطاقة', 'حر'])
+            ->pluck('price', 'type');
 
-        if (!$card || !$month) {
-            return ['total' => 0, 'paid' => 0, 'remaining' => 0];
-        }
-
-        // Get bread prices
-        $prices = BreadPrice::whereIn('type', ['بالبطاقة', 'حر'])->pluck('price', 'type');
         $breadPriceWithCard = $prices['بالبطاقة'] ?? 0;
         $freeBreadPrice = $prices['حر'] ?? 0;
-        $freeBreadPerMonth = $card->free_bread_per_month ?? 0;
 
         $daysInMonth = $month->number_of_days_in_the_month ?? 0;
 
-        // Calculate total required payment
-        $total = ($card->members * $breadPriceWithCard * 5 * $daysInMonth); // 5 = breadPerPerson
-        if ($freeBreadPerMonth > 0) {
-            $total += ($freeBreadPrice * $daysInMonth * $freeBreadPerMonth);
+        $total = ($card->members * $breadPriceWithCard * 5 * $daysInMonth);
+
+        if ($card->free_bread_per_month > 0) {
+            $total += ($freeBreadPrice * $daysInMonth * $card->free_bread_per_month);
         }
 
-        // Get total paid so far
         $paid = Payment::where('card_id', $card->id)
             ->where('month_id', $month->id)
             ->sum('paid_amount');
-
+        $total = (int) $total;
         $remaining = max(0, $total - $paid);
 
-        if ($this->remaining >= $total) {
-            $status = PaymentStatus::PAID;
-        } elseif ($this->remaining > 0) {
+        // Status منطقي ونظيف
+        if ($paid == 0) {
+            $status = PaymentStatus::UNPAID;
+        } elseif ($remaining > 0) {
             $status = PaymentStatus::PARTIAL;
         } else {
-            $status = PaymentStatus::UNPAID;
+            $status = PaymentStatus::PAID;
         }
 
-        return [
-            'total' => $total,
-            'paid' => $paid,
-            'remaining' => $remaining,
-            'status' => $status
-        ];
+        return compact('total', 'paid', 'remaining', 'status');
     }
 }

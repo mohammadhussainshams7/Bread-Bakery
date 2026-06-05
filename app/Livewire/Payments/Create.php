@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Payments;
 
+use App\Livewire\Concerns\HasArabicMonths;
 use Livewire\Component;
 use App\Models\Card;
 use App\Models\Month;
@@ -9,6 +10,7 @@ use App\Services\PaymentService;
 
 class Create extends Component
 {
+    use HasArabicMonths;
     public $cardSearch = '';
     public $selectedCardId = null;
     public $selectedMonth = null;
@@ -19,20 +21,8 @@ class Create extends Component
 
     protected PaymentService $paymentService;
 
-    public $arbMonths = [
-        '1' => 'يناير',
-        '2' => 'فبراير',
-        '3' => 'مارس',
-        '4' => 'ابريل',
-        '5' => 'مايو',
-        '6' => 'يونيو',
-        '7' => 'يوليو',
-        '8' => 'اغسطس',
-        '9' => 'ستمبر',
-        '10' => 'اكتوبر',
-        '11' => 'نوفمبر',
-        '12' => 'ديسمبر'
-    ];
+
+
 
     public function boot(PaymentService $paymentService)
     {

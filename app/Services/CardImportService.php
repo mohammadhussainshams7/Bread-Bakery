@@ -14,11 +14,8 @@ class CardImportService
     public function import(): void
     {
         $url = $this->getExportUrl();
-
         $filePath = $this->downloadFile($url);
-
         Excel::import(new CardImport, $filePath);
-
         $this->cleanup($filePath);
     }
 

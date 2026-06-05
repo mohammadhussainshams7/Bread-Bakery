@@ -2,30 +2,19 @@
 
 namespace App\Livewire\Month;
 
+use App\Livewire\Concerns\HasArabicMonths;
 use Livewire\Component;
 use App\Models\Month;
 use Carbon\Carbon;
 
 class MonthEdit extends Component
 {
+    use HasArabicMonths;
     public $month_id;
     public $month_number;
     public $year;
     public $number_of_days_in_the_month;
-    public $arbMonths = [
-        1 => 'يناير',
-        2 => 'فبراير',
-        3 => 'مارس',
-        4 => 'ابريل',
-        5 => 'مايو',
-        6 => 'يونيو',
-        7 => 'يوليو',
-        8 => 'اغسطس',
-        9 => 'سبتمبر',
-        10 => 'اكتوبر',
-        11 => 'نوفمبر',
-        12 => 'ديسمبر'
-    ];
+
 
     public function mount($id)
     {
