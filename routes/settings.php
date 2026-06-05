@@ -25,6 +25,8 @@ use App\Livewire\BuyingBreadByTheDay\Create as BuyingBreadCreate;
 use App\Livewire\BuyingBreadByTheDay\Update as BuyingBreadUpdate;
 use App\Livewire\BuyingBreadByTheDay\Delete as BuyingBreadDelete;
 use App\Livewire\FreeBreadSales\FreeBreadSales;
+use App\Livewire\Payments\ShowDetails;
+use App\Livewire\ReportMonth\ReportMonth;
 use Illuminate\Support\Facades\Route;
 
 
@@ -32,11 +34,11 @@ Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {
 
     Route::name('cards.')->group(function () {
 
-        // الصفحة الرئيسية /
-        Route::get('/', Index::class)->name('index');
 
         // باقي الصفحات
         Route::prefix('cards')->group(function () {
+            // الصفحة الرئيسية /
+            Route::get('/', Index::class)->name('index');
 
             Route::get('/create', Create::class)->name('create');
 
@@ -53,15 +55,7 @@ Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {
 
         // صفحة عرض المدفوعات
         Route::get('/', PaymentsIndex::class)->name('index');
-
-        // صفحة إضافة دفعة جديدة
-        Route::get('/create', PaymentsCreate::class)->name('create');
-
-        // صفحة تعديل دفعة (باستخدام parameter id)
-        Route::get('/update/{payment}', PaymentsUpdate::class)->name('update');
-
-        // صفحة حذف دفعة (اختياري، غالبًا عبر Livewire مباشرة)
-        Route::get('/delete/{paymentId}', PaymentsDelete::class)->name('delete');
+        Route::get("showdetails/{id}", ShowDetails::class)->name('showdetails');
     });
 
 
@@ -79,7 +73,9 @@ Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {
     Route::prefix('unpaid-cards')->name('unpaid-cards.')->group(function () {
         Route::get('/', UnpaidCardsIndex::class)->name('index');
     });
-
+    Route::prefix('reportMonth')->name('reportMonth.')->group(function () {
+        Route::get('/', ReportMonth::class)->name('index');
+    });
     Route::prefix('sell-free-bread')->name('sell-free-bread.')->group(function () {
         Route::get('/', FreeBreadSales::class)->name('index');
     });
